@@ -1,20 +1,30 @@
-import { Transform } from 'stream';
+import { Transform, pipeline } from 'stream';
 
-export const lineNumberer = () => {
-  let lineNumber = 1;
+let lineNumber = 1;
 
-  const transformer = new Transform({
-    transform(chunk, encoding, callback) {
-      const lines = chunk.toString().split(/\r?\n/);
-      const numberedLines = lines
-        .filter(line => line.length > 0)
-        .map(line => `${lineNumber++} | ${line}`)
-        .join('\n');
-
-      this.push(numberedLines + (lines[lines.length - 1] === '' ? '\n' : ''));
-      callback();
+const lineNumberer = new Transform({
+  transform(chunk, encoding, callback) {
+    const lines = chunk.toString().split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].length > 0) {
+        lines[i] = `${lineNumber} | ${lines[i]}`;
+        lineNumber++;
+      }
     }
-  });
+    
+    this.push(lines.join('\n'));
+    callback();
+  }
+});
 
-  process.stdin.pipe(transformer).pipe(process.stdout);
-};
+pipeline(
+  process.stdin,
+  lineNumberer,
+  process.stdout,
+  (err) => {
+    if (err) {
+      console.error('Pipeline failed:', err);
+    }
+  }
+);

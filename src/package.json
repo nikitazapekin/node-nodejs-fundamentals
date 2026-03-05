@@ -5,18 +5,20 @@
   "scripts": {
     "fs:snapshot": "node src/fs/snapshot.js",
     "fs:restore": "node src/fs/restore.js",
-    "fs:find-by-ext": "node src/fs/findByExt.js --ext=txt",
+    "fs:find-by-ext": "node src/fs/findByExt.js",
     "fs:merge": "node src/fs/merge.js",
     "cli:interactive": "node src/cli/interactive.js",
-    "cli:progress": "node src/cli/progress.js --duration=5000 --interval=100 --length=30 --color=#00ff00",
-    "modules:dynamic": "node src/modules/dynamic.js uppercase",
+    "cli:progress": "node src/cli/progress.js",
+    "modules:dynamic": "node src/modules/dynamic.js",
     "hash:verify": "node src/hash/verify.js",
     "streams:line-numberer": "node src/streams/lineNumberer.js",
-    "streams:filter": "node src/streams/filter.js --pattern=test",
-    "streams:split": "node src/streams/split.js --lines=10",
+    "streams:filter": "node src/streams/filter.js",
+    "streams:split": "node src/streams/split.js",
     "zip:compress": "node src/zip/compressDir.js",
     "zip:decompress": "node src/zip/decompressDir.js",
     "wt:main": "node src/wt/main.js",
     "cp:exec": "node src/cp/execCommand.js"
-  }
+  },
+  "author": "",
+  "license": "ISC"
 }

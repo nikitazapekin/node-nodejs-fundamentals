@@ -1,12 +1,9 @@
-import fs from 'fs';
-import crypto from 'crypto';
+import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { createReadStream } from 'fs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const calculateHash = (filePath) => {
+async function calculateSHA256(filePath) {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
     const stream = createReadStream(filePath);
@@ -15,29 +12,39 @@ const calculateHash = (filePath) => {
     stream.on('end', () => resolve(hash.digest('hex')));
     stream.on('error', reject);
   });
-};
+}
 
-export const verify = async () => {
-  const workspacePath = path.join(__dirname, '../../workspace');
-  const checksumsPath = path.join(workspacePath, 'checksums.json');
-
+async function verify() {
   try {
-    await fs.promises.access(checksumsPath);
-  } catch {
+    const checksumsPath = path.join(process.cwd(), 'checksums.json');
+
+     
+    try {
+      await fs.access(checksumsPath);
+    } catch {
+      throw new Error('FS operation failed');
+    }
+ 
+    const checksumsData = await fs.readFile(checksumsPath, 'utf-8');
+    const checksums = JSON.parse(checksumsData);
+ 
+    for (const [fileName, expectedHash] of Object.entries(checksums)) {
+      const filePath = path.join(process.cwd(), fileName);
+      
+      try {
+        const actualHash = await calculateSHA256(filePath);
+        console.log(`${fileName} — ${actualHash === expectedHash ? 'OK' : 'FAIL'}`);
+      } catch {
+        console.log(`${fileName} — FAIL`);
+      }
+    }
+
+  } catch (error) {
+    if (error.message === 'FS operation failed') {
+      throw error;
+    }
     throw new Error('FS operation failed');
   }
+}
 
-  const checksumsContent = await fs.promises.readFile(checksumsPath, 'utf-8');
-  const checksums = JSON.parse(checksumsContent);
-
-  for (const [file, expectedHash] of Object.entries(checksums)) {
-    const filePath = path.join(workspacePath, file);
-    
-    try {
-      const actualHash = await calculateHash(filePath);
-      console.log(`${file} — ${actualHash === expectedHash ? 'OK' : 'FAIL'}`);
-    } catch {
-      console.log(`${file} — FAIL`);
-    }
-  }
-};
+await verify();

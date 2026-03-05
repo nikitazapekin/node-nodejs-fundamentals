@@ -1,37 +1,51 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function findFilesByExt(dir, ext, basePath, files = []) {
-  const items = await fs.readdir(dir, { withFileTypes: true });
-
-  for (const item of items) {
-    const fullPath = path.join(dir, item.name);
-    
-    if (item.isDirectory()) {
-      await findFilesByExt(fullPath, ext, basePath, files);
-    } else if (item.isFile() && item.name.endsWith(`.${ext}`)) {
-      files.push(path.relative(basePath, fullPath));
-    }
-  }
-
-  return files;
-}
-
-export const findByExt = async () => {
-  const workspacePath = path.join(__dirname, '../../workspace');
-  const ext = process.argv.find(arg => arg.startsWith('--ext='))?.split('=')[1] || 'txt';
-
+async function findByExt() {
   try {
-    await fs.access(workspacePath);
-  } catch {
+    const workspacePath = path.join(process.cwd(), 'workspace');
+    
+    try {
+      await fs.access(workspacePath);
+    } catch {
+      throw new Error('FS operation failed');
+    }
+ 
+    const extArgIndex = process.argv.indexOf('--ext');
+    let extension = 'txt';
+    
+    if (extArgIndex !== -1 && process.argv[extArgIndex + 1]) {
+      extension = process.argv[extArgIndex + 1].replace(/^\./, '');
+    }
+ 
+    async function findFiles(dir, baseDir) {
+      const files = await fs.readdir(dir, { withFileTypes: true });
+      const results = [];
+
+      for (const file of files) {
+        const fullPath = path.join(dir, file.name);
+        
+        if (file.isDirectory()) {
+          const subResults = await findFiles(fullPath, baseDir);
+          results.push(...subResults);
+        } else if (file.isFile() && file.name.endsWith(`.${extension}`)) {
+          results.push(path.relative(baseDir, fullPath));
+        }
+      }
+
+      return results;
+    }
+
+    const foundFiles = await findFiles(workspacePath, workspacePath);
+    
+    foundFiles.sort().forEach(file => console.log(file));
+
+  } catch (error) {
+    if (error.message === 'FS operation failed') {
+      throw error;
+    }
     throw new Error('FS operation failed');
   }
+}
 
-  const files = await findFilesByExt(workspacePath, ext, workspacePath);
-  files.sort();
-
-  files.forEach(file => console.log(file));
-};
+await findByExt();

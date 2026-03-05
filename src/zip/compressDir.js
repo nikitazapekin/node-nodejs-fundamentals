@@ -1,64 +1,70 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
-import zlib from 'zlib';
-import { fileURLToPath } from 'url';
 import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
+import zlib from 'zlib';
 import { createGzip } from 'zlib';
+import archiver from 'archiver';
+ 
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-async function* walkDir(dir, baseDir) {
-  const files = await fs.promises.readdir(dir, { withFileTypes: true });
-  
-  for (const file of files) {
-    const fullPath = path.join(dir, file.name);
-    const relativePath = path.relative(baseDir, fullPath);
-    
-    if (file.isDirectory()) {
-      yield* walkDir(fullPath, baseDir);
-    } else {
-      yield { fullPath, relativePath };
+async function compressDir() {
+  try {
+    const toCompressPath = path.join(process.cwd(), 'workspace', 'toCompress');
+    const compressedDir = path.join(process.cwd(), 'workspace', 'compressed');
+    const archivePath = path.join(compressedDir, 'archive.br');
+ 
+    try {
+      await fs.access(toCompressPath);
+    } catch {
+      throw new Error('FS operation failed');
     }
+ 
+    await fs.mkdir(compressedDir, { recursive: true });
+
+  
+    const brotli = zlib.createBrotliCompress();
+    const output = createWriteStream(archivePath);
+ 
+    async function getAllFiles(dir) {
+      const files = await fs.readdir(dir, { withFileTypes: true });
+      const results = [];
+
+      for (const file of files) {
+        const fullPath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+          const subFiles = await getAllFiles(fullPath);
+          results.push(...subFiles);
+        } else {
+          results.push(fullPath);
+        }
+      }
+
+      return results;
+    }
+
+    const files = await getAllFiles(toCompressPath);
+     
+    const tempPath = path.join(compressedDir, 'temp.tar');
+    const tempStream = createWriteStream(tempPath);
+
+    for (const file of files) {
+      const readStream = createReadStream(file);
+      await pipeline(readStream, tempStream, { end: false });
+    }
+    tempStream.end();
+ 
+    const readStream = createReadStream(tempPath);
+    await pipeline(readStream, brotli, output);
+
+ 
+    await fs.unlink(tempPath);
+
+  } catch (error) {
+    if (error.message === 'FS operation failed') {
+      throw error;
+    }
+    throw new Error('FS operation failed');
   }
 }
 
-export const compressDir = async () => {
-  const workspacePath = path.join(__dirname, '../../workspace');
-  const toCompressPath = path.join(workspacePath, 'toCompress');
-  const compressedPath = path.join(workspacePath, 'compressed');
-
-  try {
-    await fs.promises.access(toCompressPath);
-  } catch {
-    throw new Error('FS operation failed');
-  }
-
-  await fs.promises.mkdir(compressedPath, { recursive: true });
-
-  const archivePath = path.join(compressedPath, 'archive.br');
-  const writeStream = createWriteStream(archivePath);
-  const brotli = zlib.createBrotliCompress();
-
-  const entries = [];
-  for await (const entry of walkDir(toCompressPath, toCompressPath)) {
-    entries.push(entry);
-  }
-
-  // Write header with file list
-  const header = JSON.stringify(entries.map(e => e.relativePath));
-  writeStream.write(Buffer.from(header.length.toString().padStart(10, '0')));
-  writeStream.write(Buffer.from(header));
-
-  // Compress and write files
-  for (const entry of entries) {
-    const fileStream = createReadStream(entry.fullPath);
-    const compressedStream = fileStream.pipe(zlib.createBrotliCompress());
-    
-    for await (const chunk of compressedStream) {
-      writeStream.write(chunk);
-    }
-  }
-
-  writeStream.end();
-};
+await compressDir();

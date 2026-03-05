@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const dynamic = async () => {
+async function dynamic() {
   const pluginName = process.argv[2];
   
   if (!pluginName) {
@@ -12,7 +12,7 @@ export const dynamic = async () => {
   }
 
   try {
-    const pluginPath = path.join(__dirname, '../../plugins', `${pluginName}.js`);
+    const pluginPath = path.join(__dirname, 'plugins', `${pluginName}.js`);
     const plugin = await import(pluginPath);
     
     if (typeof plugin.run === 'function') {
@@ -22,8 +22,10 @@ export const dynamic = async () => {
       console.error('Plugin not found');
       process.exit(1);
     }
-  } catch {
+  } catch (error) {
     console.error('Plugin not found');
     process.exit(1);
   }
-};
+}
+
+await dynamic();

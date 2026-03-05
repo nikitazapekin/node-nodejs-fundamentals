@@ -1,58 +1,67 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createReadStream, createWriteStream } from 'fs';
-import { Transform } from 'stream';
+import { Transform, pipeline } from 'stream';
+import { once } from 'events';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+async function split() {
+  
+  const linesIndex = process.argv.indexOf('--lines');
+  let linesPerChunk = 10;
 
-export const split = () => {
-  const linesArg = process.argv.find(arg => arg.startsWith('--lines='));
-  const maxLines = linesArg ? parseInt(linesArg.split('=')[1]) : 10;
+  if (linesIndex !== -1 && process.argv[linesIndex + 1]) {
+    linesPerChunk = parseInt(process.argv[linesIndex + 1]) || 10;
+  }
 
-  const sourcePath = path.join(__dirname, '../../workspace/source.txt');
-  const readStream = createReadStream(sourcePath, { encoding: 'utf-8' });
-
+  const sourcePath = path.join(process.cwd(), 'source.txt');
   let chunkNumber = 1;
-  let linesBuffer = [];
-  let writeStream = null;
+  let lineCount = 0;
+  let currentChunkStream = null;
+ 
+  function createChunkStream() {
+    const chunkPath = path.join(process.cwd(), `chunk_${chunkNumber}.txt`);
+    return createWriteStream(chunkPath);
+  }
+ 
+  currentChunkStream = createChunkStream();
 
-  const lineSplitter = new Transform({
+  const splitter = new Transform({
     transform(chunk, encoding, callback) {
-      const lines = chunk.toString().split(/\r?\n/);
-      
+      const data = chunk.toString();
+      const lines = data.split('\n');
+
       for (const line of lines) {
-        if (line.length === 0) continue;
-
-        linesBuffer.push(line);
-
-        if (linesBuffer.length >= maxLines) {
-          if (writeStream) {
-            writeStream.end();
-          }
-          
-          const chunkPath = path.join(__dirname, `../../workspace/chunk_${chunkNumber}.txt`);
-          writeStream = createWriteStream(chunkPath);
-          writeStream.write(linesBuffer.join('\n'));
-          
-          linesBuffer = [];
+        if (lineCount >= linesPerChunk) {
+     
+          currentChunkStream.end();
           chunkNumber++;
+          currentChunkStream = createChunkStream();
+          lineCount = 0;
         }
+
+        currentChunkStream.write(line + '\n');
+        lineCount++;
       }
-      
+
       callback();
     },
 
     flush(callback) {
-      if (linesBuffer.length > 0) {
-        const chunkPath = path.join(__dirname, `../../workspace/chunk_${chunkNumber}.txt`);
-        writeStream = createWriteStream(chunkPath);
-        writeStream.write(linesBuffer.join('\n'));
-        writeStream.end();
+      if (currentChunkStream) {
+        currentChunkStream.end();
       }
       callback();
     }
   });
 
-  readStream.pipe(lineSplitter);
-};
+  const readStream = createReadStream(sourcePath);
+
+  try {
+    await pipeline(readStream, splitter);
+  } catch (error) {
+    console.error('Pipeline failed:', error);
+    process.exit(1);
+  }
+}
+
+await split();

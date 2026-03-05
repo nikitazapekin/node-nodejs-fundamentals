@@ -6,24 +6,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function scanDirectory(dirPath, basePath) {
   const entries = [];
-  const items = await fs.readdir(dirPath, { withFileTypes: true });
+  const files = await fs.readdir(dirPath, { withFileTypes: true });
 
-  for (const item of items) {
-    const fullPath = path.join(dirPath, item.name);
+  for (const file of files) {
+    const fullPath = path.join(dirPath, file.name);
     const relativePath = path.relative(basePath, fullPath);
 
-    if (item.isDirectory()) {
+    if (file.isDirectory()) {
       entries.push({
         path: relativePath,
         type: 'directory'
       });
-      
       const subEntries = await scanDirectory(fullPath, basePath);
       entries.push(...subEntries);
-    } else if (item.isFile()) {
+    } else if (file.isFile()) {
       const stats = await fs.stat(fullPath);
       const content = await fs.readFile(fullPath);
-      
       entries.push({
         path: relativePath,
         type: 'file',
@@ -36,25 +34,34 @@ async function scanDirectory(dirPath, basePath) {
   return entries;
 }
 
-export const snapshot = async () => {
-  const workspacePath = path.join(__dirname, '../../workspace');
-  
+async function snapshot() {
   try {
-    await fs.access(workspacePath);
-  } catch {
+    const workspacePath = path.join(process.cwd(), 'workspace');
+    
+    try {
+      await fs.access(workspacePath);
+    } catch {
+      throw new Error('FS operation failed');
+    }
+
+    const rootPath = workspacePath;
+    const entries = await scanDirectory(workspacePath, workspacePath);
+
+    const snapshot = {
+      rootPath,
+      entries
+    };
+
+    await fs.writeFile(
+      path.join(process.cwd(), 'snapshot.json'),
+      JSON.stringify(snapshot, null, 2)
+    );
+  } catch (error) {
+    if (error.message === 'FS operation failed') {
+      throw error;
+    }
     throw new Error('FS operation failed');
   }
+}
 
-  const rootPath = path.resolve(workspacePath);
-  const entries = await scanDirectory(workspacePath, workspacePath);
-  
-  const snapshot = {
-    rootPath,
-    entries
-  };
-
-  await fs.writeFile(
-    path.join(workspacePath, 'snapshot.json'),
-    JSON.stringify(snapshot, null, 2)
-  );
-};
+await snapshot();
