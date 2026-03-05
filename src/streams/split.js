@@ -1,11 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { createReadStream, createWriteStream } from 'fs';
-import { Transform, pipeline } from 'stream';
-import { once } from 'events';
+import { Transform } from 'stream';
 
 async function split() {
-  
+ 
   const linesIndex = process.argv.indexOf('--lines');
   let linesPerChunk = 10;
 
@@ -14,32 +13,47 @@ async function split() {
   }
 
   const sourcePath = path.join(process.cwd(), 'source.txt');
+ 
+  try {
+    await fs.promises.access(sourcePath);
+  } catch {
+    console.error('source.txt not found');
+    process.exit(1);
+  }
+
   let chunkNumber = 1;
   let lineCount = 0;
   let currentChunkStream = null;
  
   function createChunkStream() {
     const chunkPath = path.join(process.cwd(), `chunk_${chunkNumber}.txt`);
+    console.log(`Создаю файл: chunk_${chunkNumber}.txt`);
     return createWriteStream(chunkPath);
   }
  
   currentChunkStream = createChunkStream();
-
+ 
   const splitter = new Transform({
     transform(chunk, encoding, callback) {
       const data = chunk.toString();
       const lines = data.split('\n');
 
-      for (const line of lines) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+         
+        if (i === lines.length - 1 && line === '') {
+          continue;
+        }
+
         if (lineCount >= linesPerChunk) {
-     
+ 
           currentChunkStream.end();
           chunkNumber++;
           currentChunkStream = createChunkStream();
           lineCount = 0;
         }
 
-        currentChunkStream.write(line + '\n');
+        currentChunkStream.write(line + (i < lines.length - 1 ? '\n' : ''));
         lineCount++;
       }
 
@@ -47,21 +61,39 @@ async function split() {
     },
 
     flush(callback) {
+     
       if (currentChunkStream) {
         currentChunkStream.end();
+        console.log(`Готово! Создано ${chunkNumber} файлов.`);
       }
       callback();
     }
   });
 
-  const readStream = createReadStream(sourcePath);
+ 
+  const readStream = createReadStream(sourcePath, { encoding: 'utf8' });
 
-  try {
-    await pipeline(readStream, splitter);
-  } catch (error) {
-    console.error('Pipeline failed:', error);
+ 
+  readStream.on('error', (err) => {
+    console.error('Ошибка чтения файла:', err);
     process.exit(1);
-  }
+  });
+
+  splitter.on('error', (err) => {
+    console.error('Ошибка обработки:', err);
+    process.exit(1);
+  });
+
+  
+  readStream.pipe(splitter);
+ 
+  return new Promise((resolve, reject) => {
+    splitter.on('finish', resolve);
+    splitter.on('error', reject);
+  });
 }
 
-await split();
+await split().catch(err => {
+  console.error('Ошибка:', err);
+  process.exit(1);
+});
