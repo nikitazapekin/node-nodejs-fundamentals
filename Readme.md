@@ -1,99 +1,184 @@
-# Node.js Fundamentals
+# Assignment: Node.js Fundamentals
 
 ## Description
 
-This repository contains solutions for Node.js Fundamentals assignment. The assignment covers various Node.js core APIs including File System, CLI, Modules, Hash, Streams, Zlib, Worker Threads, and Child Processes.
+Your task is to complete several tasks to learn Node.js core APIs. Each subtask is a standalone exercise in a dedicated file inside the corresponding subfolder of `src/`.
 
-## Getting Started
+Fork the starter repository and implement the required functionality.
 
-1. **Fork this repository**
-   
-   Click the "Fork" button at the top right of this page: https://github.com/AlreadyBored/node-nodejs-fundamentals
+Starter repository: https://github.com/AlreadyBored/node-nodejs-fundamentals
 
-2. **Clone your fork**
-   
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/node-nodejs-fundamentals.git
-   cd node-nodejs-fundamentals
-   ```
+## Technical requirements
 
-3. **Install dependencies** (if any added in the future)
-   
-   ```bash
-   npm install
-   ```
+- Any external tools and libraries are prohibited
+- Use 24.x.x version (24.10.0 or upper) of Node.js
+- Don't change the signature of pre-written functions (e.g. don't rename them, don't make them synchronous, etc.)
+- Prefer asynchronous API whenever possible
 
-4. **Start implementing the tasks**
-   
-   Each file in the `src/` directory contains a function template with comments describing what needs to be implemented.
-
-## Requirements
-
-- Node.js version: >=24.10.0
-- npm version: >=10.9.2
-- No external libraries allowed
-
-## Usage
+## Subtasks
 
 ### File System (src/fs)
 
-- `npm run fs:snapshot` - Create snapshot of workspace directory
-- `npm run fs:restore` - Restore directory structure from snapshot
-- `npm run fs:findByExt` - Find files by extension in workspace
-- `npm run fs:merge` - Merge .txt files from workspace/parts
-- `npm run fs:merge -- --files a.txt,b.txt,c.txt` - Merge specific files from workspace/parts in provided order
+You should implement several functions in dedicated files:
 
-Snapshot format reminder:
+- `snapshot.js` — implement function that recursively scans the `workspace` directory and writes a `snapshot.json` file next to it. The JSON file should contain `rootPath` and a flat `entries` array with file contents:
+  ```json
+  {
+    "rootPath": "/home/user/workspace",
+    "entries": [
+      { "path": "file1.txt", "type": "file", "size": 1024, "content": "file contents as base64 string" },
+      { "path": "subdir", "type": "directory" },
+      { "path": "subdir/nested.txt", "type": "file", "size": 512, "content": "nested file contents as base64 string" }
+    ]
+  }
+  ```
+  `rootPath` is an absolute path to the original `workspace` directory. `entries[].path` values should be relative to `workspace`. Size is in bytes (only for files). File contents should be stored as base64-encoded strings. If `workspace` doesn't exist, `Error` with message `FS operation failed` must be thrown.
 
-```json
-{
-  "rootPath": "/absolute/path/to/workspace",
-  "entries": [
-    { "path": "file1.txt", "type": "file", "size": 1024, "content": "base64" },
-    { "path": "nested", "type": "directory" }
-  ]
-}
-```
+- `restore.js` — implement function that reads `snapshot.json` and recreates the directory/file structure described in it inside a `workspace_restored` folder. Directories should be created, files should be recreated with their original content (decoded from base64). `rootPath` from snapshot should be treated as metadata and must not affect restore destination. If `snapshot.json` doesn't exist, `Error` with message `FS operation failed` must be thrown. If `workspace_restored` already exists, `Error` with message `FS operation failed` must be thrown.
 
-`entries[].path` values must be relative to `workspace`.
+- `findByExt.js` — implement function that recursively finds all files with a specific extension inside the `workspace` directory and prints their relative paths sorted alphabetically, one per line. The extension is provided as a CLI argument `--ext <extension>` (e.g. `--ext txt` or `--ext js`). If the `--ext` argument is not provided, default to `.txt`. If `workspace` doesn't exist, `Error` with message `FS operation failed` must be thrown.
+
+- `merge.js` — implement function that concatenates text files and writes the result to `workspace/merged.txt`.
+  - Default behavior: read all `.txt` files from `workspace/parts` in alphabetical order by filename.
+  - Optional behavior: if CLI argument `--files <filename1,filename2,...>` is provided, merge only those files from `workspace/parts` in the provided order.
+  - If `--files` is provided, it takes precedence over automatic `.txt` discovery.
+  - If the `parts` folder doesn't exist, contains no `.txt` files (for default mode), or any requested file from `--files` does not exist, `Error` with message `FS operation failed` must be thrown.
 
 ### CLI (src/cli)
 
-- `npm run cli:interactive` - Interactive command-line interface
-- `npm run cli:progress` - Display progress bar
+You should implement several functions in dedicated files:
+
+- `interactive.js` — implement a simple interactive command-line interface using the `readline` module. The program should:
+  - Display a prompt `> ` and wait for user input
+  - Support the following commands:
+    - `uptime` — prints process uptime in seconds (e.g. `Uptime: 12.34s`)
+    - `cwd` — prints the current working directory
+    - `date` — prints the current date and time in ISO format
+    - `exit` — prints `Goodbye!` and terminates the process
+  - On unknown command, print `Unknown command`
+  - On `Ctrl+C` or end of input, print `Goodbye!` and exit
+
+- `progress.js` — implement a function that simulates a progress bar in the terminal. The bar should go from 0% to 100%, updating in place (using `\r`). Parameters can be customized via CLI options:
+  - `--duration <milliseconds>` — total duration in milliseconds (default: 5000)
+  - `--interval <milliseconds>` — update interval in milliseconds (default: 100)
+  - `--length <number>` — progress bar character length (default: 30)
+  - `--color <hex>` — optional color for the filled part of the progress bar in `#RRGGBB` format (default: no color)
+  - If `--color` is invalid, render the progress bar without color (do not throw)
+  - Apply color only to the filled part (`████...`) and reset style with `\x1b[0m` after it
+  The output format should be: `[████████████████████          ] 67%`. When complete, print `Done!` on a new line.
 
 ### Modules (src/modules)
 
-- `npm run modules:dynamic` - Dynamic plugin loading
+You should implement a function in a dedicated file:
+
+- `dynamic.js` — implement a function that accepts a plugin name as a command line argument and dynamically imports the corresponding module from the `plugins/` subdirectory. Each plugin module exports a `run()` function that returns a string. After importing, call `run()` and print the result. Three plugins are pre-created: `uppercase.js`, `reverse.js`, `repeat.js`. If the plugin doesn't exist, print `Plugin not found` and exit with code 1.
 
 ### Hash (src/hash)
 
-- `npm run hash:verify` - Verify file checksums using SHA256
+You should implement a function in a dedicated file:
+
+- `verify.js` — implement function that reads a `checksums.json` file containing an object where keys are filenames and values are expected SHA256 hex hashes:
+  ```json
+  {
+    "file1.txt": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "file2.txt": "486ea46224d1bb4fb680f34f7c9ad96a8f24ec88be73ea8e5a6c65260e9cb8a7"
+  }
+  ```
+  For each file listed, calculate its actual SHA256 hash using Streams API and print the result:
+  ```
+  file1.txt — OK
+  file2.txt — FAIL
+  ```
+  If `checksums.json` doesn't exist, `Error` with message `FS operation failed` must be thrown.
 
 ### Streams (src/streams)
 
-- `npm run streams:lineNumberer` - Add line numbers to stdin input
-- `npm run streams:filter` - Filter stdin lines by pattern
-- `npm run streams:split` - Split file into chunks
+You should implement several functions in dedicated files:
+
+- `lineNumberer.js` — implement function that reads data from `process.stdin`, prepends each line with its line number (starting from 1) using a Transform Stream, and writes the result to `process.stdout`. Example: input `hello\nworld` → output `1 | hello\n2 | world`
+
+- `filter.js` — implement function that reads data from `process.stdin`, filters only lines that contain a pattern (given as a CLI argument `--pattern <string>`), and writes matching lines to `process.stdout` using a Transform Stream
+
+- `split.js` — implement function that reads file `source.txt` using a Readable Stream and splits it into chunk files: `chunk_1.txt`, `chunk_2.txt`, etc. Each chunk should contain at most N lines (N is given as a CLI argument `--lines <number>`, default: 10). Must use Streams API.
 
 ### Zlib (src/zip)
 
-- `npm run zip:compressDir` - Compress directory to .br archive
-- `npm run zip:decompressDir` - Decompress .br archive
+You should implement several functions in dedicated files:
+
+- `compressDir.js` — implement function that reads all files from the `workspace/toCompress/` directory, recursively compresses the entire directory structure (preserving directory paths and file names) into a single `.br` archive file `archive.br` and saves it to `workspace/compressed/` directory (creating it if it doesn't exist). Must use Streams API. If `toCompress` doesn't exist, `Error` with message `FS operation failed` must be thrown.
+
+- `decompressDir.js` — implement function that reads the `archive.br` file from `workspace/compressed/`, decompresses it, and extracts the original directory structure with all files to `workspace/decompressed/` directory (creating it if it doesn't exist). The decompressed content must match the original. If `compressed` doesn't exist or `archive.br` doesn't exist, `Error` with message `FS operation failed` must be thrown.
 
 ### Worker Threads (src/wt)
 
-- `npm run wt:main` - Parallel sorting with worker threads
+You should implement several functions in dedicated files:
+
+- `worker.js` — implement a function that receives an array of numbers from the main thread, sorts them in ascending order, and sends the sorted array back to the main thread
+
+- `main.js` — implement function that reads a JSON file `data.json` containing an array of numbers (e.g. `[5, 3, 8, 1, 9, 2, ...]`). The function should:
+  1. Split the array into N chunks (where N = number of logical CPU cores)
+  2. Create N worker threads from `worker.js`, sending one chunk to each
+  3. Collect sorted chunks from all workers
+  4. Merge the sorted chunks into a single sorted array (using k-way merge algorithm)
+  5. Log the final sorted array to the console
+
+  The results must be collected in the same order as workers were created.
 
 ### Child Processes (src/cp)
 
-- `npm run cp:execCommand` - Execute command in child process
+You should implement a function in a dedicated file:
 
-## Submission
+- `execCommand.js` — implement function `execCommand` that takes a command string as a CLI argument (e.g. `node src/cp/execCommand.js "ls -la"`), spawns it as a child process using `spawn`, and:
+  - pipes the child's `stdout` to `process.stdout`
+  - pipes the child's `stderr` to `process.stderr`
+  - passes environment variables from the parent process to the child process
+  - when the child exits, the parent process exits with the same exit code
 
-1. Implement all the required functionality in the corresponding files
-2. Test your solutions using the npm scripts provided
-3. Commit your changes to your forked repository
-4. Submit the link to your repository for review
 
-## !!! Please don't submit Pull Requests to this repository !!!
+  # Scoring: Node.js Fundamentals
+
+Max total score: 200
+
+
+## Check
+
+For check simplification you have npm-scripts in `package.json`.
+NB! Some scripts have predefined data (e.g. environment variables, CLI arguments). Feel free to change it during the check if necessary.
+
+## Basic Scope
+
+- File System (src/fs)
+    - **+10** `snapshot.js` implemented properly (recursive scan, correct JSON structure with path/type/size)
+    - **+10** `restore.js` implemented properly (reads snapshot, recreates structure)
+    - **+6** `findByExt.js` implemented properly (recursive search, sorted output)
+    - **+6** `merge.js` implemented properly (reads .txt files in order, concatenates, writes result)
+- CLI (src/cli)
+    - **+10** `interactive.js` implemented properly (readline prompt, supports uptime/cwd/date/exit commands, handles Ctrl+C)
+    - **+10** `progress.js` implemented properly (in-place updating progress bar, 0-100% over ~5 seconds)
+    - **+6** `progress.js` supports `--color <hex>` (`#RRGGBB`), applies color only to filled segment, and resets ANSI style correctly
+- Modules (src/modules)
+    - **+10** `dynamic.js` implemented properly (dynamic import from plugins/, calls run(), handles missing plugin)
+- Hash (src/hash)
+    - **+12** `verify.js` implemented properly (reads checksums.json, calculates SHA256 via Streams, prints OK/FAIL per file)
+- Streams (src/streams)
+    - **+10** `lineNumberer.js` implemented properly (Transform stream, prepends line numbers)
+    - **+10** `filter.js` implemented properly (Transform stream, filters by pattern from CLI arg)
+    - **+10** `split.js` implemented properly (Readable stream, splits file into chunks by line count)
+- Zlib (src/zip)
+    - **+10** `compressDir.js` implemented properly (reads all files from workspace/toCompress/, recursively compresses entire directory structure into single .br archive, saves to workspace/compressed/)
+    - **+10** `decompressDir.js` implemented properly (reads archive.br from workspace/compressed/, decompresses and extracts to workspace/decompressed/, result matches original)
+
+## Advanced Scope
+
+- Worker Threads (src/wt)
+    - **+10** `worker.js` implemented properly (receives array, returns sorted array)
+    - **+30** `main.js` implemented properly (reads data.json, splits by CPU count, distributes to workers, k-way merges results)
+- Child Processes (src/cp)
+    - **+10** `execCommand.js` spawns child process from CLI argument
+    - **+10** child process stdout/stderr piped to parent stdout/stderr
+    - **+10** parent exits with the same exit code as child
+
+## Forfeits
+
+- **-95% of total task score** Any external tools/libraries are used
+- **-30% of total task score** Commits after deadline (except commits that affect only Readme.md, .gitignore, etc.)

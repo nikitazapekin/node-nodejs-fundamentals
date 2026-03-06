@@ -1,3 +1,3 @@
-export const run = () => {
-  return 'HELLO WORLD';
-};
+export function run() {
+  return 'UPPERCASE EXAMPLE';
+}

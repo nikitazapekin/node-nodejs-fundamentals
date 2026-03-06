@@ -1,3 +1,3 @@
-export const run = () => {
-  return 'dlrow olleh';
-};
+export function run() {
+  return 'ESREVER ELPMAXE';
+}
