@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { pipeline } from 'stream/promises';
 import { resolvePath, validateFileExists, validateIsFile } from '../utils/pathResolver.js';
 
 export async function jsonToCsv(currentDir, inputPath, outputPath) {
