@@ -32,8 +32,7 @@ export async function csvToJson(currentDir, inputPath, outputPath) {
     let headers = [];
     let isFirstLine = true;
     let isFirstObject = true;
-
-    // Write opening bracket
+ 
     writeStream.write('[\n');
 
     for await (const line of rl) {
@@ -52,16 +51,14 @@ export async function csvToJson(currentDir, inputPath, outputPath) {
       headers.forEach((header, index) => {
         obj[header] = values[index] || '';
       });
-
-      // Add comma between objects
+ 
       if (!isFirstObject) {
         writeStream.write(',\n');
       }
       writeStream.write(JSON.stringify(obj));
       isFirstObject = false;
     }
-
-    // Write closing bracket
+ 
     writeStream.write('\n]');
     writeStream.end();
 
