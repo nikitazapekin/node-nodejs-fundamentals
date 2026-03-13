@@ -108,23 +108,30 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           }
           break;
 
-        case 'hash':
-          {
-            const parsed = parseArgs(args);
-            if (!parsed.input) {
-              console.log('Invalid input: missing --input');
-            } else {
-              const algorithm = parsed.algorithm || 'sha256';
-              const save = parsed.save === 'true' || parsed.save === true || parsed.save === '';
-              const result = await hash(cwd, parsed.input, algorithm, save);
-              if (result) {
-                success = true;
-              } else {
-                console.log('Operation failed');
-              }
-            }
-          }
-          break;
+     case 'hash':
+  {
+    console.log('Processing hash command...');
+    const parsed = parseArgs(args);
+    console.log('Parsed arguments:', parsed);
+    
+    if (!parsed.input) {
+      console.log('Invalid input: missing --input');
+    } else {
+      const algorithm = parsed.algorithm || 'sha256';
+    
+      const save = parsed.save === true || parsed.save === 'true';
+      console.log('Using algorithm:', algorithm);
+      console.log('Save flag:', save);
+      
+      const result = await hash(cwd, parsed.input, algorithm, save);
+      if (result) {
+        success = true;
+      } else {
+        console.log('Operation failed');
+      }
+    }
+  }
+  break;
 
         case 'hash-compare':
           {

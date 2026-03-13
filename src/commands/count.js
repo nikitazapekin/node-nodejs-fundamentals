@@ -13,7 +13,7 @@ export async function count(currentDir, inputPath) {
   let lines = 0;
   let words = 0;
   let chars = 0;
-  let lastCharWasNewline = true;
+  let inWord = false;
 
   const countTransform = new Transform({
     transform(chunk, encoding, callback) {
@@ -22,20 +22,33 @@ export async function count(currentDir, inputPath) {
 
       for (let i = 0; i < text.length; i++) {
         const c = text[i];
-        
+       
         if (c === '\n') {
           lines++;
-          lastCharWasNewline = true;
-        } else if (c !== ' ' && c !== '\t' && c !== '\r') {
-          if (lastCharWasNewline || i === 0) {
-            words++;
-          }
-          lastCharWasNewline = false;
-        } else {
-          lastCharWasNewline = false;
+        }
+        
+        const isWhitespace = c === ' ' || c === '\t' || c === '\n' || c === '\r';
+        
+        if (!isWhitespace && !inWord) {
+       
+          words++;
+          inWord = true;
+        } else if (isWhitespace && inWord) {
+      
+          inWord = false;
         }
       }
 
+      callback();
+    },
+
+    flush(callback) {
+      
+      if (chars > 0 && lines === 0) {
+        lines = 1;
+      }
+     
+      
       callback();
     }
   });
@@ -45,16 +58,13 @@ export async function count(currentDir, inputPath) {
       fs.createReadStream(resolvedInput),
       countTransform
     );
- 
-    if (chars > 0 && lines === 0) {
-      lines = 1;
-    }
 
     console.log(`Lines: ${lines}`);
     console.log(`Words: ${words}`);
     console.log(`Characters: ${chars}`);
     return true;
-  } catch {
+  } catch (error) {
+    console.error('Error in count:', error.message);
     return false;
   }
 }

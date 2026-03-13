@@ -20,7 +20,7 @@ export async function logStats(currentDir, inputPath, outputPath) {
     const numCores = os.cpus().length;
     const chunkSize = Math.ceil(fileSize / numCores);
 
-    const workers = [];
+ 
     const chunks = [];
  
     const fileHandle = await fs.promises.open(resolvedInput, 'r');
@@ -40,7 +40,7 @@ export async function logStats(currentDir, inputPath, outputPath) {
           await fileHandle.read(buffer, 0, bytesToRead, readEnd);
           
           for (let j = 0; j < bytesToRead; j++) {
-            if (buffer[j] === 10) { // \n
+            if (buffer[j] === 10) { 
               end = readEnd + j + 1;
               foundNewline = true;
               break;
