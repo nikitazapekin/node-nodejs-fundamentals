@@ -5,7 +5,8 @@ export function resolvePath(currentDir, targetPath) {
   if (path.isAbsolute(targetPath)) {
     return targetPath;
   }
-  return path.resolve(currentDir, targetPath);
+
+  return path.join(currentDir, targetPath);
 }
 
 export function validateFileExists(filePath) {

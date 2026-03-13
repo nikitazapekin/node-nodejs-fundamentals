@@ -41,9 +41,9 @@ export function startRepl(rl, initialCwd, onCwdChange) {
 
         case 'cd':
           if (!args) {
-            console.log('Invalid input');
+            console.log('Invalid input: missing directory path');
           } else {
-            const newCwd = cd(cwd, args);
+            const newCwd = await cd(cwd, args);
             if (newCwd) {
               cwd = newCwd;
               success = true;
@@ -54,15 +54,17 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           break;
 
         case 'ls':
-          await ls(cwd);
-          success = true;
+          success = await ls(cwd);
+          if (!success) {
+            console.log('Operation failed');
+          }
           break;
 
         case 'csv-to-json':
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.output) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input or --output');
             } else {
               const result = await csvToJson(cwd, parsed.input, parsed.output);
               if (result) {
@@ -78,7 +80,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.output) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input or --output');
             } else {
               const result = await jsonToCsv(cwd, parsed.input, parsed.output);
               if (result) {
@@ -94,7 +96,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input');
             } else {
               const result = await count(cwd, parsed.input);
               if (result) {
@@ -110,10 +112,10 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input');
             } else {
               const algorithm = parsed.algorithm || 'sha256';
-              const save = parsed.save === 'true' || parsed.save === true;
+              const save = parsed.save === 'true' || parsed.save === true || parsed.save === '';
               const result = await hash(cwd, parsed.input, algorithm, save);
               if (result) {
                 success = true;
@@ -128,7 +130,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.hash) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input or --hash');
             } else {
               const algorithm = parsed.algorithm || 'sha256';
               const result = await hashCompare(cwd, parsed.input, parsed.hash, algorithm);
@@ -146,7 +148,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.output || !parsed.password) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input, --output, or --password');
             } else {
               const result = await encrypt(cwd, parsed.input, parsed.output, parsed.password);
               if (result) {
@@ -162,7 +164,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.output || !parsed.password) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input, --output, or --password');
             } else {
               const result = await decrypt(cwd, parsed.input, parsed.output, parsed.password);
               if (result) {
@@ -178,7 +180,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           {
             const parsed = parseArgs(args);
             if (!parsed.input || !parsed.output) {
-              console.log('Invalid input');
+              console.log('Invalid input: missing --input or --output');
             } else {
               const result = await logStats(cwd, parsed.input, parsed.output);
               if (result) {
@@ -191,7 +193,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
           break;
 
         default:
-          console.log('Invalid input');
+          console.log('Invalid input: unknown command');
       }
 
       if (success) {
@@ -199,7 +201,7 @@ export function startRepl(rl, initialCwd, onCwdChange) {
         onCwdChange(cwd);
       }
     } catch (error) {
-      console.log('Operation failed');
+      console.log('Operation failed:', error.message);
     }
 
     rl.prompt();

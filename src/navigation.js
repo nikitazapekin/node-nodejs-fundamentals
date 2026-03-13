@@ -7,16 +7,25 @@ export function up(currentDir) {
   return parentDir; 
 }
 
-export function cd(currentDir, targetPath) {
+export async function cd(currentDir, targetPath) {
   try {
     const resolvedPath = resolvePath(currentDir, targetPath);
-    const stats = fs.statSync(resolvedPath);
+     
+    const stats = await fs.stat(resolvedPath).catch(() => null);
+    
+    if (!stats) {
+      console.log(`Directory does not exist: ${resolvedPath}`);
+      return null;
+    }
     
     if (stats.isDirectory()) {
       return resolvedPath;
+    } else {
+      console.log(`Path is not a directory: ${resolvedPath}`);
+      return null;
     }
-    return null;
-  } catch {
+  } catch (error) {
+    console.log(`Error accessing path: ${error.message}`);
     return null;
   }
 }
@@ -27,30 +36,44 @@ export async function ls(currentDir) {
     const itemsWithStats = await Promise.all(
       items.map(async (item) => {
         const fullPath = path.join(currentDir, item);
-        const stats = await fs.stat(fullPath);
-        return {
-          name: item,
-          type: stats.isDirectory() ? 'folder' : 'file'
-        };
+        try {
+          const stats = await fs.stat(fullPath);
+          return {
+            name: item,
+            type: stats.isDirectory() ? 'folder' : 'file'
+          };
+        } catch {
+         
+          return {
+            name: item,
+            type: 'unknown'
+          };
+        }
       })
     );
 
-  
+   
     const sorted = itemsWithStats.sort((a, b) => {
       if (a.type === b.type) {
         return a.name.localeCompare(b.name);
       }
+      
+      if (a.type === 'unknown') return 1;
+      if (b.type === 'unknown') return -1;
       return a.type === 'folder' ? -1 : 1;
     });
 
- 
-    const maxNameLength = Math.max(...sorted.map(item => item.name.length)) + 2;
+    
+    const maxNameLength = Math.max(...sorted.map(item => item.name.length), 10) + 2;
     
     for (const item of sorted) {
       const paddedName = item.name.padEnd(maxNameLength);
       console.log(`${paddedName}[${item.type}]`);
     }
-  } catch {
-    console.log('Operation failed');
+    
+    return true;
+  } catch (error) {
+    console.log(`Cannot list directory: ${error.message}`);
+    return false;
   }
 }
