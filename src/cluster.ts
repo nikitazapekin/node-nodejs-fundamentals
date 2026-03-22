@@ -12,26 +12,22 @@ if (cluster.isPrimary) {
   console.log(`Starting ${numWorkers} worker instances...`);
 
   const workerPorts = new Map<Worker, number>();
-
-  // Fork workers
+ 
   for (let i = 0; i < numWorkers; i++) {
     const workerPort = PORT + i + 1;
     const worker = cluster.fork({ WORKER_PORT: workerPort });
     workerPorts.set(worker, workerPort);
   }
-
-  // Handle worker exit
+ 
   cluster.on('exit', (_worker, _code, _signal) => {
     console.log(`Worker ${_worker.process.pid} died. Restarting...`);
     const workerPort = workerPorts.get(_worker) || PORT + 1;
     const newWorker = cluster.fork({ WORKER_PORT: workerPort });
     workerPorts.set(newWorker, workerPort);
   });
-
-  // Simple round-robin load balancer
+ 
   let currentWorker = 0;
-  
-  // Create a simple HTTP server as load balancer
+   
   const http = require('http');
   const balancer = http.createServer((req: any, res: any) => {
     const workers = Object.values(cluster.workers || {});
@@ -68,7 +64,7 @@ if (cluster.isPrimary) {
   });
   
 } else {
-  // Worker process
+ 
   const workerPort = parseInt(process.env.WORKER_PORT || (PORT + 1).toString(), 10);
   
   async function startWorker() {

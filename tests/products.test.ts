@@ -30,7 +30,7 @@ describe('Product API Tests', () => {
     });
     
     it('should return all products', async () => {
-      // Create a test product
+ 
       const createResponse = await app.inject({
         method: 'POST',
         url: '/api/products',
@@ -59,7 +59,7 @@ describe('Product API Tests', () => {
   
   describe('GET /api/products/:productId', () => {
     it('should return product by id', async () => {
-      // Create a product first
+ 
       const createResponse = await app.inject({
         method: 'POST',
         url: '/api/products',
@@ -163,7 +163,7 @@ describe('Product API Tests', () => {
   
   describe('PUT /api/products/:productId', () => {
     it('should update an existing product', async () => {
-      // Create a product first
+     
       const createResponse = await app.inject({
         method: 'POST',
         url: '/api/products',
@@ -213,7 +213,7 @@ describe('Product API Tests', () => {
   
   describe('DELETE /api/products/:productId', () => {
     it('should delete an existing product', async () => {
-      // Create a product first
+ 
       const createResponse = await app.inject({
         method: 'POST',
         url: '/api/products',
@@ -234,8 +234,7 @@ describe('Product API Tests', () => {
       });
       
       expect(deleteResponse.statusCode).toBe(204);
-      
-      // Verify product is deleted
+  
       const getResponse = await app.inject({
         method: 'GET',
         url: `/api/products/${product.id}`
