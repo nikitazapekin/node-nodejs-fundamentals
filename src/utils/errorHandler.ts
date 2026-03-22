@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
 export async function errorHandler(fastify: FastifyInstance) {
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error, _request, reply) => {
     fastify.log.error(error);
     
     // Handle 404 for non-existing routes

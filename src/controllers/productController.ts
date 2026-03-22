@@ -4,9 +4,9 @@ import { productSchema, productIdSchema } from '../schemas/productSchemas';
 import { ZodError } from 'zod';
 
 export class ProductController {
-  async getAllProducts(request: FastifyRequest, reply: FastifyReply) {
+  async getAllProducts(_request: FastifyRequest, reply: FastifyReply) {
     try {
-      const products = productService.getAllProducts();
+      const products = await productService.getAllProducts();
       return reply.status(200).send(products);
     } catch (error) {
       throw error;
@@ -19,7 +19,7 @@ export class ProductController {
   ) {
     try {
       const { productId } = productIdSchema.parse(request.params);
-      const product = productService.getProductById(productId);
+      const product = await productService.getProductById(productId);
       
       if (!product) {
         return reply.status(404).send({ 
@@ -44,7 +44,7 @@ export class ProductController {
   ) {
     try {
       const validatedData = productSchema.parse(request.body);
-      const product = productService.createProduct(validatedData);
+      const product = await productService.createProduct(validatedData);
       return reply.status(201).send(product);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -64,7 +64,7 @@ export class ProductController {
       const { productId } = productIdSchema.parse(request.params);
       const validatedData = productSchema.partial().parse(request.body);
       
-      const updatedProduct = productService.updateProduct(productId, validatedData);
+      const updatedProduct = await productService.updateProduct(productId, validatedData);
       
       if (!updatedProduct) {
         return reply.status(404).send({ 
@@ -89,7 +89,7 @@ export class ProductController {
   ) {
     try {
       const { productId } = productIdSchema.parse(request.params);
-      const deleted = productService.deleteProduct(productId);
+      const deleted = await productService.deleteProduct(productId);
       
       if (!deleted) {
         return reply.status(404).send({ 

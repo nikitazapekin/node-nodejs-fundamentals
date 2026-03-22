@@ -14,8 +14,8 @@ describe('Product API Tests', () => {
     await app.close();
   });
   
-  beforeEach(() => {
-    db.clear();
+  beforeEach(async () => {
+    await db.clear();
   });
   
   describe('GET /api/products', () => {

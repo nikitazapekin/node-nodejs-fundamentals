@@ -4,15 +4,15 @@ import { Product, CreateProductDTO, UpdateProductDTO } from '../types/product';
 import { productSchema } from '../schemas/productSchemas';
 
 export class ProductService {
-  getAllProducts(): Product[] {
+  async getAllProducts(): Promise<Product[]> {
     return db.getAll();
   }
 
-  getProductById(id: string): Product | undefined {
+  async getProductById(id: string): Promise<Product | undefined> {
     return db.getById(id);
   }
 
-  createProduct(data: CreateProductDTO): Product {
+  async createProduct(data: CreateProductDTO): Promise<Product> {
     const validatedData = productSchema.parse(data);
     
     const product: Product = {
@@ -23,8 +23,8 @@ export class ProductService {
     return db.create(product);
   }
 
-  updateProduct(id: string, data: UpdateProductDTO): Product | undefined {
-    const existingProduct = db.getById(id);
+  async updateProduct(id: string, data: UpdateProductDTO): Promise<Product | undefined> {
+    const existingProduct = await db.getById(id);
     if (!existingProduct) {
       return undefined;
     }
@@ -34,7 +34,6 @@ export class ProductService {
       ...data
     };
     
-    // Validate the updated product
     productSchema.parse({
       name: updatedProduct.name,
       description: updatedProduct.description,
@@ -46,7 +45,7 @@ export class ProductService {
     return db.update(id, updatedProduct);
   }
 
-  deleteProduct(id: string): boolean {
+  async deleteProduct(id: string): Promise<boolean> {
     return db.delete(id);
   }
 }

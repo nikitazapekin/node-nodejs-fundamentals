@@ -8,18 +8,9 @@ dotenv.config();
 
 export async function buildApp() {
   const fastify = Fastify({
-    logger: process.env.NODE_ENV === 'development'
-      ? {
-          transport: {
-            target: 'pino-pretty',
-            options: {
-              translateTime: 'HH:MM:ss Z',
-              ignore: 'pid,hostname',
-            },
-          },
-          level: 'info',
-        }
-      : true,
+    logger: {
+      level: process.env.NODE_ENV === 'development' ? 'info' : 'warn',
+    },
   });
 
   // Register plugins
