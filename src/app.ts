@@ -17,6 +17,7 @@ export async function buildApp() {
               ignore: 'pid,hostname',
             },
           },
+          level: 'info',
         }
       : true,
   });
