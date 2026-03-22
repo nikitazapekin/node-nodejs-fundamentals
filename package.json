@@ -1,38 +1,40 @@
 {
-  "name": "node-nodejs-fundamentals",
+  "name": "product-catalog-api",
   "version": "1.0.0",
-  "description": "Node.js Fundamentals assignment repository",
-  "engines": {
-    "node": ">=24.10.0",
-    "npm": ">=10.9.2"
-  },
-  "type": "module",
+  "description": "CRUD API for Product Catalog using Fastify",
+  "main": "dist/server.js",
   "scripts": {
-    "fs:snapshot": "node src/fs/snapshot.js",
-    "fs:restore": "node src/fs/restore.js",
-    "fs:findByExt": "node src/fs/findByExt.js --ext txt",
-    "fs:merge": "node src/fs/merge.js",
-    "cli:interactive": "node src/cli/interactive.js",
-    "cli:progress": "node src/cli/progress.js",
-    "modules:dynamic": "node src/modules/dynamic.js uppercase",
-    "hash:verify": "node src/hash/verify.js",
-    "streams:lineNumberer": "echo 'hello\nworld' | node src/streams/lineNumberer.js",
-    "streams:filter": "echo 'hello\nworld\ntest' | node src/streams/filter.js --pattern test",
-    "streams:split": "node src/streams/split.js --lines 10",
-    "zip:compressDir": "node src/zip/compressDir.js",
-    "zip:decompressDir": "node src/zip/decompressDir.js",
-    "wt:main": "node src/wt/main.js",
-    "cp:execCommand": "node src/cp/execCommand.js \"echo 'Hello World'\""
+    "start:dev": "tsx watch src/server.ts",
+    "start:prod": "npm run build && NODE_ENV=production node dist/server.js",
+    "start:multi": "tsx src/cluster.ts",
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AlreadyBored/node-nodejs-fundamentals.git"
+  "keywords": ["fastify", "crud", "api", "product-catalog"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.0",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
   },
-  "keywords": [
-    "nodejs",
-    "fundamentals",
-    "assignments"
-  ],
-  "author": "alreadybored",
-  "license": "ISC"
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.30",
+    "@types/uuid": "^10.0.0",
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.3"
+  },
+  "engines": {
+    "node": ">=24.10.0"
+  }
 }
